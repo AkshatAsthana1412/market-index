@@ -41,6 +41,9 @@ class FinnhubAPIFetcher(APIDataFetcher):
         pass
 
 class YahooFinanceAPIFetcher(APIDataFetcher):
+    def __init__(self):
+        super().__init__(load_api_config("yahoo"))
+
     def fetch_data(self):
         pass
 
