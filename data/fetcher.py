@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 import pandas as pd
+from utils.data_utils import load_api_config
 
 class DataFetcher(ABC):
     @abstractmethod
@@ -30,6 +31,9 @@ class APIDataFetcher(DataFetcher, ABC):
         pass
 
 class FinnhubAPIFetcher(APIDataFetcher):
+    def __init__(self):
+        super().__init__(load_api_config("finnhub"))
+
     def fetch_data(self):
         pass
 
