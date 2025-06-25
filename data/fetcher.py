@@ -1,8 +1,9 @@
 from abc import ABC, abstractmethod
 import pandas as pd
-from utils.data_utils import load_api_config
 import time
 import requests
+from storer import DataStorage, CSVStorage, SQLiteStorage
+from utils.data_utils import load_api_config
 
 class DataFetcher(ABC):
     @abstractmethod
@@ -21,8 +22,9 @@ class CSVDataFetcher(DataFetcher):
         pass
 
 class APIDataFetcher(DataFetcher, ABC):
-    def __init__(self, api_config: dict):
+    def __init__(self, api_config: dict, storage: DataStorage):
         self._api_config = api_config
+        self._storage = storage
 
     def _with_retries(self, func, max_retries=3, delay=1, backoff=2, *args, **kwargs):
         """
@@ -45,28 +47,21 @@ class APIDataFetcher(DataFetcher, ABC):
     def fetch_data(self):
         pass
 
-    @abstractmethod
     def store_data(self, data: pd.DataFrame):
-        pass
+        self._storage.save(data)
 
 class FinnhubAPIFetcher(APIDataFetcher):
     def __init__(self):
-        super().__init__(load_api_config("finnhub"))
+        super().__init__(load_api_config("finnhub"), SQLiteStorage())
 
     def fetch_data(self):
-        pass
-
-    def store_data(self, data: pd.DataFrame):
         pass
 
 class YahooFinanceAPIFetcher(APIDataFetcher):
     def __init__(self):
-        super().__init__(load_api_config("yahoo"))
+        super().__init__(load_api_config("yahoo"), CSVStorage())
 
     def fetch_data(self):
-        pass
-
-    def store_data(self, data: pd.DataFrame):
         pass
 
 class FetcherFactory:
