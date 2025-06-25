@@ -20,7 +20,7 @@ class CSVDataFetcher(DataFetcher):
 
 class APIDataFetcher(DataFetcher, ABC):
     def __init__(self, api_config: dict):
-        self.api_config = api_config
+        self._api_config = api_config
 
     @abstractmethod
     def fetch_data(self):
@@ -50,10 +50,12 @@ class YahooFinanceAPIFetcher(APIDataFetcher):
     def store_data(self, data: pd.DataFrame):
         pass
 
-def get_api_fetcher(api_name: str, config: dict) -> APIDataFetcher:
-    if api_name == "yahoo":
-        return YahooFinanceAPIFetcher(config)
-    elif api_name == "finnhub":
-        return FinnhubAPIFetcher(config)
-    else:
-        raise ValueError(f"Unknown API: {api_name}")
+class FetcherFactory:
+    @staticmethod
+    def get_api_fetcher(api_name: str) -> APIDataFetcher:
+        if api_name == "yahoo":
+            return YahooFinanceAPIFetcher()
+        elif api_name == "finnhub":
+            return FinnhubAPIFetcher()
+        else:
+            raise ValueError(f"Unknown API: {api_name}")
