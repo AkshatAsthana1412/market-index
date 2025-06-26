@@ -27,16 +27,20 @@ T = TypeVar('T')
 
 class DataStorage(ABC, Generic[T]):
     @abstractmethod
-    def save(self, data: T, destination: str):
+    def save(self, data: T):
         pass
 
 class CSVStorage(DataStorage[DataFrameAdapter]):
-    def save(self, data: DataFrameAdapter, destination: str):
-        data.to_csv(destination, index=False)
+    def __init__(self, destination: str):
+        self.destination = destination
+
+    def save(self, data: DataFrameAdapter):
+        data.to_csv(self.destination, index=False)
 
 class SQLiteStorage(DataStorage[DataFrameAdapter]):
-    def __init__(self, db_path="data.db"):
+    def __init__(self, db_path: str, table_name: str):
         self.conn = sqlite3.connect(db_path)
+        self.table_name = table_name
 
-    def save(self, data: DataFrameAdapter, destination: str):
-        data.to_sql(destination, conn=self.conn)
+    def save(self, data: DataFrameAdapter):
+        data.to_sql(self.table_name, conn=self.conn)
