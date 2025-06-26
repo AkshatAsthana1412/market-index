@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 import pandas as pd
 import time
 import requests
-from storer import DataStorage, CSVStorage, SQLiteStorage, DataFrameAdapter
+from storer import DataStorage, DataFrameAdapter
 from utils.data_utils import load_api_config
 
 class DataFetcher(ABC):
@@ -44,7 +44,7 @@ class APIDataFetcher(DataFetcher, ABC):
                 current_delay *= backoff
 
     @abstractmethod
-    def fetch_data(self, api_endpoint: str):
+    def fetch_data(self, api_endpoint: str, headers: dict = {}, params: dict = {}):
         pass
 
     def store_data(self, data: DataFrameAdapter):
@@ -54,13 +54,12 @@ class FinnhubAPIFetcher(APIDataFetcher):
     def __init__(self, storage: DataStorage):
         super().__init__(load_api_config("finnhub"), storage)
 
-    def fetch_data(self, api_endpoint: str):
-        api_key = self._api_config["api_key"]
+    def fetch_data(self, api_endpoint: str, headers: dict = {}, params: dict = {}):
         base_url = self._api_config["base_url"]
         url = f"{base_url}/{api_endpoint}"
-        headers = {"X-Finnhub-Token": api_key}
+        headers = {**headers, "X-Finnhub-Token": self._api_config["api_key"]}
         try:
-            response = requests.get(url, headers=headers)
+            response = requests.get(url, headers=headers, params=params)
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
