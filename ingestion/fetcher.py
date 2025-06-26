@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 import pandas as pd
 import time
 import requests
-from storer import DataStorage, DataFrameAdapter
+from ingestion.storer import DataStorage, DataFrameAdapter
 from utils.data_utils import load_api_config
 
 class DataFetcher(ABC):
@@ -47,8 +47,8 @@ class APIDataFetcher(DataFetcher, ABC):
     def fetch_data(self, api_endpoint: str, headers: dict = {}, params: dict = {}):
         pass
 
-    def store_data(self, data: DataFrameAdapter):
-        self._storage.save(data)
+    def store_data(self, data: DataFrameAdapter, destination: str):
+        self._storage.save(data, destination)
 
 class FinnhubAPIFetcher(APIDataFetcher):
     def __init__(self, storage: DataStorage):
@@ -59,15 +59,14 @@ class FinnhubAPIFetcher(APIDataFetcher):
         url = f"{base_url}/{api_endpoint}"
         headers = {**headers, "X-Finnhub-Token": self._api_config["api_key"]}
         try:
-            response = requests.get(url, headers=headers, params=params)
+            response = requests.get(url, headers=headers, params=params, verify=False)
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
-            print(f"Error fetching data from Finnhub: {e}")
-            return None
+            raise Exception(f"Error fetching data from Finnhub: {e}")
         
-    def store_data(self, data: DataFrameAdapter):
-        return super().store_data(data)
+    def store_data(self, data: DataFrameAdapter, destination: str):
+        return super().store_data(data, destination)
 
 class YahooFinanceAPIFetcher(APIDataFetcher):
     def __init__(self, storage: DataStorage):
@@ -78,10 +77,10 @@ class YahooFinanceAPIFetcher(APIDataFetcher):
 
 class FetcherFactory:
     @staticmethod
-    def get_api_fetcher(api_name: str) -> APIDataFetcher:
+    def get_api_fetcher(api_name: str, storage: DataStorage) -> APIDataFetcher:
         if api_name == "yahoo":
-            return YahooFinanceAPIFetcher()
+            return YahooFinanceAPIFetcher(storage)
         elif api_name == "finnhub":
-            return FinnhubAPIFetcher()
+            return FinnhubAPIFetcher(storage)
         else:
             raise ValueError(f"Unknown API: {api_name}")
