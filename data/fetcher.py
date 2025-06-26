@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 import pandas as pd
 import time
 import requests
-from storer import DataStorage, CSVStorage, SQLiteStorage
+from storer import DataStorage, CSVStorage, SQLiteStorage, DataFrameAdapter
 from utils.data_utils import load_api_config
 
 class DataFetcher(ABC):
@@ -11,14 +11,14 @@ class DataFetcher(ABC):
         pass
 
     @abstractmethod
-    def store_data(self, data: pd.DataFrame):
+    def store_data(self, data: DataFrameAdapter):
         pass
 
 class CSVDataFetcher(DataFetcher):
     def fetch_data(self):
         pass
 
-    def store_data(self, data: pd.DataFrame):
+    def store_data(self, data: DataFrameAdapter):
         pass
 
 class APIDataFetcher(DataFetcher, ABC):
@@ -44,18 +44,31 @@ class APIDataFetcher(DataFetcher, ABC):
                 current_delay *= backoff
 
     @abstractmethod
-    def fetch_data(self):
+    def fetch_data(self, api_endpoint: str):
         pass
 
-    def store_data(self, data: pd.DataFrame):
+    def store_data(self, data: DataFrameAdapter):
         self._storage.save(data)
 
 class FinnhubAPIFetcher(APIDataFetcher):
-    def __init__(self):
-        super().__init__(load_api_config("finnhub"), SQLiteStorage())
+    def __init__(self, storage: DataStorage):
+        super().__init__(load_api_config("finnhub"), storage)
 
-    def fetch_data(self):
-        pass
+    def fetch_data(self, api_endpoint: str):
+        api_key = self._api_config["api_key"]
+        base_url = self._api_config["base_url"]
+        url = f"{base_url}/{api_endpoint}"
+        headers = {"X-Finnhub-Token": api_key}
+        try:
+            response = requests.get(url, headers=headers)
+            response.raise_for_status()
+            return response.json()
+        except requests.exceptions.RequestException as e:
+            print(f"Error fetching data from Finnhub: {e}")
+            return None
+        
+    def store_data(self, data: DataFrameAdapter):
+        return super().store_data(data)
 
 class YahooFinanceAPIFetcher(APIDataFetcher):
     def __init__(self):
