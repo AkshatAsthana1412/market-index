@@ -71,8 +71,8 @@ class FinnhubAPIFetcher(APIDataFetcher):
         return super().store_data(data)
 
 class YahooFinanceAPIFetcher(APIDataFetcher):
-    def __init__(self):
-        super().__init__(load_api_config("yahoo"), CSVStorage())
+    def __init__(self, storage: DataStorage):
+        super().__init__(load_api_config("yahoo"), storage)
 
     def fetch_data(self):
         pass
