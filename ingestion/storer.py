@@ -16,8 +16,8 @@ class PandasDataFrameAdapter(DataFrameAdapter):
     def __init__(self, df: pd.DataFrame):
         self.df = df
 
-    def to_sql(self, table_name: str, conn):
-        self.df.to_sql(table_name, conn, if_exists="replace", index=False)
+    def to_sql(self, table_name: str, conn, mode: str = "append"):
+        self.df.to_sql(table_name, conn, if_exists=mode, index=False)
 
     def to_csv(self, destination: str):
         self.df.to_csv(destination, index=False)
