@@ -1,3 +1,14 @@
+# 📊 Project Overview
+
+This project builds and tracks a custom equal-weighted index composed of the top 100 U.S. stocks by market capitalization. The index is updated daily to reflect changes in market cap, ensuring each constituent maintains an equal notional weight.
+
+Key features include:
+* Dynamic daily rebalancing based on updated market cap data
+* Accurate calculation of index performance and composition over the past month
+* Clean, modular Python codebase with extensible architecture
+* Final output in a well-formatted Excel report
+
+
 ## Steps to run the code:
 * Install the requirements from the requirements.txt by running the following command on the terminal : `pip3 install requirements.txt`
 * I used python 3.12 for dev. 
