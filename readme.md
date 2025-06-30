@@ -59,7 +59,7 @@ Key features include:
 
 ## Furthur improvements:
 * Instead of the `main.py` file acting as an entry, and running CLI commands to run the pipeline, the pipeline can be orchestrated via airflow, which can also provide alerting and monitoring mechanisms, making observability easier.
-* With increasing data size/index size, a spark cluster could be used for imporved parallelism, though it will need code refactoring.
+* With increasing data size/index size, a big data processing framework like apache spark could be used for imporved parallelism, though it will need code refactoring.
 * The sharesOutstanding values can be fetched concurrently to improve ingestion times. 
 * Real time rebalancing of the index during market hours could be done, but it would need fast, reliable data sources which have high rate limits or websocket interfaces to fetch price data in real time.
 * As the data size increases, we can switch to cloud storage or cloud datawarehouse to save storage costs.
