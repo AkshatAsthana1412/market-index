@@ -1,13 +1,10 @@
-import requests
 import pandas as pd
-from io import StringIO
 import yfinance as yf
-from requests_ratelimiter import LimiterSession
-from ratelimit import limits, sleep_and_retry
 import time
-from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime, timedelta
 import sqlite3
+from datetime import datetime, timedelta
+from io import StringIO
+import requests
 
 def get_sp500_tickers() -> list:
     url = "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
