@@ -62,4 +62,6 @@ Key features include:
 * With increasing data size/index size, a spark cluster could be used for imporved parallelism, though it will need code refactoring.
 * The sharesOutstanding values can be fetched concurrently to improve ingestion times. 
 * Real time rebalancing of the index during market hours could be done, but it would need fast, reliable data sources which have high rate limits or websocket interfaces to fetch price data in real time.
+* As the data size increases, we can switch to cloud storage or cloud datawarehouse to save storage costs.
+* The ingestion logic can be written in golang for faster processing and more efficient concurrency support.
 * I initially tried to code an ingestion framework where any API could be plugged and data could be fetched and stored in a variety of destinations(csv, DBs etc.), but due to time constraints and unavailability of free APIs, I abandoned that approach. (That code can still be found in `archived_code` dir.)
