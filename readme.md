@@ -10,9 +10,10 @@ Key features include:
 
 
 ## Steps to run the code:
-* Install the requirements from the requirements.txt by running the following command on the terminal : `pip3 install requirements.txt`
+* Install the requirements from the requirements.txt by running the following command on the terminal : `pip3 install -r requirements.txt`
 * I used python 3.12 for dev. 
 * to run the project, run the command: python3 main.py <start_date> <end_date> <path_to_sqlite_db_file>
+* The dates should be in `"YYYY-MM-DD"` format, default path to sqlite db file is `data/tmp.db`.
 * Unfortunately due to time constraints, I couldn't create an airflow dag which would run the pipeline every day after market close.
 * To get data for a single day, use equal values for start and end date
 * All the data used to generate the reports from 1 Jun to 27 Jun is already stored in the `data/tmp.db` file. Feel free to query it using sqlite3 CLI.
