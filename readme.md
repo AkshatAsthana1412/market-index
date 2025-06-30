@@ -38,7 +38,7 @@ Key features include:
   * Instead I chose to fetch the stocks in S&P 500 everyday and calculate their market caps followed by selecting the top 100 stocks from this list everyday. I chose S&P500 because it consists of the top 500 publicly listed US companies with the largest market cap, so our top 100 stocks will very likely be in this list.
 * **Calculating historical market cap**
   * At first I decided to use the yf.ticker module to fetch market cap data everyday, but the problem was it returns a snapshot of the current market data of a given ticker, which would not work if we wanted to backfill.
-  * So I rewrote my logic to fetch market data using yf.download module, which allows to specify a data range, but it doesn't provide market cap values directly in the response.
+  * So I rewrote my logic to fetch market data using yf.download module, which allows to specify a date range, but it doesn't provide market cap values directly in the response.
   * To solve the above problem I used a combination of yf.ticker and yf.download.
   * I used yf.ticker to fetch *sharesOutstanding* for each ticker in S&P500 and yf.donwload to fetch *Close* price for each ticker, then calculated `marketCap = sharesOutstanding * Close`.
 * **Market holidays**
@@ -58,7 +58,7 @@ Key features include:
 
 
 ## Furthur improvements:
-* Instead of the `main.py` file acting as an entry, and running CLI commands to run the pipeline, the pipeline can be orchestrated using airflow, which can also provide alerting and monitoring mechanisms, making observability easier.
+* Instead of the `main.py` file acting as an entry, and running CLI commands to run the pipeline, the pipeline can be orchestrated via airflow, which can also provide alerting and monitoring mechanisms, making observability easier.
 * With increasing data size/index size, a spark cluster could be used for imporved parallelism, though it will need code refactoring.
 * The sharesOutstanding values can be fetched concurrently to improve ingestion times. 
 * Real time rebalancing of the index during market hours could be done, but it would need fast, reliable data sources which have high rate limits or websocket interfaces to fetch price data in real time.
