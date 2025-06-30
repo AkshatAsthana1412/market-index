@@ -63,10 +63,25 @@ def get_latest_available_data(tickers: list, date: str, max_lookback: int = 10) 
     raise ValueError(f"No valid data found within {max_lookback} days before {date}")
 
 
-def update_stocks_base_table(dt: str, tickers: list, latest_stocks_df: pd.DataFrame, db_path: str, table_name: str = "stocks_base") -> pd.DataFrame:
+def update_stocks_base_table(dt: str, tickers: list, db_path: str, table_name: str = "stocks_base") -> pd.DataFrame:
     """
     Parses the latest data and updates the stocks base table for index generation.
     """
+    # get latest available data
+    latest_stocks_df = get_latest_available_data(tickers, dt)
+    
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    # create table if it doesn't exist
+    cursor.execute(f"CREATE TABLE IF NOT EXISTS {table_name} (date TEXT, ticker TEXT, close REAL, shares_outstanding REAL, market_cap REAL);")
+    
+    # check if stocks table has data for today
+    cursor.execute(f"SELECT 1 FROM {table_name} WHERE date = ?", (dt,))
+    if cursor.fetchone():
+        print(f"Stocks table has data for {dt}. Skipping...")
+        conn.close()
+        return
+    
     # Fetch shares outstanding for each ticker
     shares_lookup = {}
     print("Fetching shares outstanding for each ticker in S&P500..")
@@ -99,14 +114,13 @@ def update_stocks_base_table(dt: str, tickers: list, latest_stocks_df: pd.DataFr
             continue
     stocks_df = pd.DataFrame(rows)
     # Store the data in the database
-    conn = sqlite3.connect(db_path)
     stocks_df.to_sql(table_name, conn, if_exists="append", index=False)
     conn.close()
     return stocks_df
 
 
 
-def update_index(db_path: str, today_str: str = None):
+def update_index(today_str: str, db_path: str = "data/test.db", stocks_base_table: str = "stocks_base", index_values_table: str = "index_values", index_stocks_table: str = "index_stocks"):
     """
     Computes and stores the equal-weighted index value for the given day.
     """
@@ -121,36 +135,36 @@ def update_index(db_path: str, today_str: str = None):
 
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
-    cursor.execute("CREATE TABLE IF NOT EXISTS index_values (date TEXT PRIMARY KEY, value REAL);")
-    cursor.execute("CREATE TABLE IF NOT EXISTS index_stocks (tickers TEXT, date TEXT);")
+    cursor.execute(f"CREATE TABLE IF NOT EXISTS {index_values_table} (date TEXT PRIMARY KEY, value REAL);")
+    cursor.execute(f"CREATE TABLE IF NOT EXISTS {index_stocks_table} (tickers TEXT, date TEXT);")
 
     # Check if index for today already exists
-    cursor.execute("SELECT 1 FROM index_values WHERE date = ?", (today_str,))
+    cursor.execute(f"SELECT 1 FROM {index_values_table} WHERE date = ?", (today_str,))
     if cursor.fetchone():
         print(f"Index for {today_str} already exists.")
         conn.close()
         return
     
     # check if stocks table has data for yesterday
-    cursor.execute("SELECT 1 FROM stocks WHERE date = ?", (yesterday_str,))
+    cursor.execute(f"SELECT 1 FROM {stocks_base_table} WHERE date = ?", (yesterday_str,))
     if not cursor.fetchone():
         print(f"Stocks table has no data for {yesterday_str}")
         index_value_today = 100.0
     else:
         # Get yesterday's index value (default to 100 if not available)
-        cursor.execute("SELECT value FROM index_values WHERE date = ?", (yesterday_str,))
+        cursor.execute(f"SELECT value FROM {index_values_table} WHERE date = ?", (yesterday_str,))
         row = cursor.fetchone()
         index_value_yesterday = row[0] if row else 100.0
         # Run SQL to compute today's index using equal-weighted average return
-        sql = """
+        sql = f"""
         WITH top100_today AS (
-            SELECT * FROM stocks
+            SELECT * FROM {stocks_base_table}
             WHERE date = ?
             ORDER BY market_cap DESC
             LIMIT 100
         ),
         top100_yesterday AS (
-            SELECT * FROM stocks
+            SELECT * FROM {stocks_base_table}
             WHERE date = ?
             AND ticker IN (SELECT ticker FROM top100_today)
         ),
@@ -177,20 +191,20 @@ def update_index(db_path: str, today_str: str = None):
     else:
         # Store the result in the index_values table
         cursor.execute(
-            "INSERT OR REPLACE INTO index_values (date, value) VALUES (?, ?)",
+            f"INSERT OR REPLACE INTO {index_values_table} (date, value) VALUES (?, ?)",
             (today_str, index_value_today)
         )
         conn.commit()
         print(f"Stored index value for {today_str}: {index_value_today}")
 
     # Store the top 100 tickers for today
-    cursor.execute("SELECT 1 FROM index_stocks WHERE date = ?", (today_str,))
+    cursor.execute(f"SELECT 1 FROM {index_stocks_table} WHERE date = ?", (today_str,))
     if cursor.fetchone():
         print(f"Stocks index for {today_str} already exists.")
     else:
-        store_top100_today = """
-        INSERT OR REPLACE INTO index_stocks (tickers, date)
-        SELECT ticker, date FROM stocks
+        store_top100_today = f"""
+        INSERT OR REPLACE INTO {index_stocks_table} (tickers, date)
+        SELECT ticker, date FROM {stocks_base_table}
             WHERE date = ?
             ORDER BY market_cap DESC
             LIMIT 100
