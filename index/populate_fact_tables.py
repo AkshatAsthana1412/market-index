@@ -67,8 +67,6 @@ def update_stocks_base_table(dt: str, tickers: list, db_path: str, table_name: s
     """
     Parses the latest data and updates the stocks base table for index generation.
     """
-    # get latest available data
-    latest_stocks_df = get_latest_available_data(tickers, dt)
     
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
@@ -81,6 +79,9 @@ def update_stocks_base_table(dt: str, tickers: list, db_path: str, table_name: s
         print(f"Stocks table has data for {dt}. Skipping...")
         conn.close()
         return
+    
+    # get latest available data
+    latest_stocks_df = get_latest_available_data(tickers, dt)
     
     # Fetch shares outstanding for each ticker
     shares_lookup = {}
@@ -214,40 +215,3 @@ def update_index(today_str: str, db_path: str = "data/test.db", stocks_base_tabl
         print(f"Stocks index for {today_str} stored successfully.")
 
     conn.close()
-
-
-
-# # 1 call per second = 60 calls per minute
-# RATE_LIMIT = 1  # requests per second
-
-# # Rate-limited requests session
-# session = LimiterSession(per_second=RATE_LIMIT)
-
-# # Rate-limit decorator for yfinance calls
-# @sleep_and_retry
-# @limits(calls=RATE_LIMIT, period=1)
-# def get_ticker_info(ticker):
-#     try:
-#         info = yf.Ticker(ticker).info
-#         market_cap = info.get("marketCap", 0)
-#         return ticker, market_cap
-#     except Exception as e:
-#         print(f"Error fetching market cap for {ticker}: {e}")
-#         return ticker, 0
-
-
-# def update_stocks_base_table(tickers:list, db_path: str):
-#     conn = sqlite3.connect(db_path)
-#     cursor = conn.cursor()
-#     cursor.execute("SELECT 1 FROM stocks WHERE date = ?", (datetime.today().strftime('%Y-%m-%d'),))
-#     if cursor.fetchone():
-#         print(f"Stocks for {datetime.today().strftime('%Y-%m-%d')} already exists. Skipping...")
-#         conn.close()
-#         return
-#     else:
-#         with ThreadPoolExecutor(max_workers=10) as executor:
-#             results = list(executor.map(get_ticker_info, tickers))
-#         df = pd.DataFrame(results, columns=["ticker", "market_cap"])
-#         df["date"] = datetime.today().strftime('%Y-%m-%d')
-#         df.to_sql("stocks", conn, if_exists="append", index=False)
-#         conn.close()
