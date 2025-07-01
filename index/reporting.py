@@ -160,6 +160,7 @@ def export_index_composition_change(db_path="data/tmp.db", output_path="data/ind
             "tickers_removed": ' '.join(removed),
             "tickers_retained": ' '.join(retained)
         })
+        s1 = s2
 
     df_new = pd.DataFrame(rows)
     with pd.ExcelWriter(output_path, engine="openpyxl", mode="a", if_sheet_exists="replace") as writer:
