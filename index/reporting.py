@@ -45,22 +45,24 @@ def export_index_performance_to_excel(db_path="data/tmp.db", index_values_table=
 def export_index_composition_to_excel(db_path="data/tmp.db", output_path="data/index_report.xlsx"):
     # Load data
     conn = sqlite3.connect(db_path)
-    df = pd.read_sql_query("SELECT date, tickers FROM index_stocks ORDER BY date, tickers", conn)
+    sql = """
+            SELECT date, group_concat(tickers, ',') as index_tickers 
+            FROM index_stocks 
+            GROUP BY date
+            ORDER BY date
+    """
+    composition_df = pd.read_sql_query(sql, conn)
     conn.close()
-
-    df["date"] = pd.to_datetime(df["date"])
-    grouped = df.groupby("date")["tickers"].apply(list).sort_index()
-    composition_df = grouped.to_frame(name="tickers")
 
     # Export with overwrite sheet
     with pd.ExcelWriter(output_path, engine="openpyxl", mode="a", if_sheet_exists="replace") as writer:
-        composition_df.to_excel(writer, sheet_name="index_composition")
+        composition_df.to_excel(writer, sheet_name="index_composition", index=False)
 
     print(f"Exported index composition to {output_path}")
 
 def export_index_summary_to_excel(db_path="data/tmp.db", index_values_table="index_values", output_path="data/index_report.xlsx"):
     """
-    Executes SQL-only logic to compute:
+    Executes SQL logic to compute:
     - latest index value
     - best/worst day by daily % return
     - total cumulative return
@@ -123,5 +125,46 @@ def export_index_summary_to_excel(db_path="data/tmp.db", index_values_table="ind
             summary_df.to_excel(writer, sheet_name="index_summary", index=False)
 
     print(f"Exported index summary to '{output_path}'")
-    
-    
+
+def export_index_composition_change(db_path="data/tmp.db", output_path="data/index_report.xlsx"):
+    """
+    Executes SQL logic to compute:
+    - index tickers removed from previous day
+    - index tickers added to current day
+    - index tickers retained from previous day
+    And exports results to Excel.
+    """
+    sql = """
+    SELECT 
+        date,
+        group_concat(tickers, ',') as index_tickers
+    FROM index_stocks 
+    GROUP BY date
+    ORDER BY date
+    """
+    conn = sqlite3.connect(db_path)
+    df = pd.read_sql_query(sql, conn)
+    conn.close()
+
+    df_new = df.set_index("date")
+    s1 = set()
+    rows = []
+    for dt, tickers in df_new['index_tickers'].items():
+        s2 = set(tickers.split(','))
+        added = s2 - s1
+        removed = s1 - s2
+        retained = s1 & s2
+        rows.append({
+            "date": dt,
+            "tickers_added": ' '.join(added),
+            "tickers_removed": ' '.join(removed),
+            "tickers_retained": ' '.join(retained)
+        })
+
+    df_new = pd.DataFrame(rows)
+    with pd.ExcelWriter(output_path, engine="openpyxl", mode="a", if_sheet_exists="replace") as writer:
+        df_new.to_excel(writer, sheet_name="index_composition_change", index=False)
+    print(f"Exported index composition change to {output_path}")
+
+
+
